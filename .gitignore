@@ -1,1 +1,7 @@
 LLGP_metrics_files/
+LLGP_metrics_files_plus/
+subsampling_files/
+*.odp
+*.pptx
+*.pdf
+
