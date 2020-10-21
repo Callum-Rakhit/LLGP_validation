@@ -10,8 +10,7 @@
 GetPackages <- function(required.packages) {
   packages.not.installed <- required.packages[!(required.packages %in% installed.packages()[, "Package"])]
   if(length(packages.not.installed)){install.packages(packages.not.installed, dependencies = T)}
-  suppressMessages(lapply(required.packages, require, character.only = T))
-}
+  suppressMessages(lapply(required.packages, require, character.only = T))}
 
 GetPackages(c("ggplot2", "reshape2", "wesanderson", "tidyverse", "scales", "doParallel", "reshape2", 
               "devtools", "dplyr", "gtable", "grid", "gridExtra", "data.table", "rlist", "ggrepel"))
@@ -29,103 +28,94 @@ duplication <- read.table(file = "~/LLGP_validation/duplication.summaryplus", he
 passedreads <- data.frame(do.call('rbind', strsplit(as.character(readdepth$PASSED_READS), ',', fixed = T)))
 rawreads <- data.frame(do.call('rbind', strsplit(as.character(readdepth$TOTAL_READS), ',', fixed = T)))
 
-exoncoverage$READ_DEPTH_F <- as.numeric(passedreads$X1)
-exoncoverage$READ_DEPTH_R <- as.numeric(passedreads$X2)
-exoncoverage$RAW_DEPTH_F <- as.numeric(rawreads$X1)
-exoncoverage$RAW_DEPTH_R <- as.numeric(rawreads$X2)
+# Add everything to exoncoverage
+exoncoverage$READ_DEPTH <- as.numeric(passedreads$X1) + as.numeric(passedreads$X2)
+exoncoverage$RAW_DEPTH <- as.numeric(rawreads$X1) + as.numeric(rawreads$X2)
 exoncoverage$duplication <- duplication$V1
+fragmentsize <- data.frame(do.call('rbind', strsplit(as.character(readdepth$LENGTH_MEDIAN), ',', fixed = T)))
+exoncoverage$fragmentsize <- (as.numeric(fragmentsize$X1) + as.numeric(fragmentsize$X2))/2
 
-filenames <- list.files(path = "~/LLGP_validation/LLGP_metrics_files_plus/", pattern = "*.json", )
-filenames <- tools::file_path_sans_ext(filenames)
-exoncoverage$filenames <- filenames
-filenames <- data.frame(do.call('rbind', strsplit(as.character(exoncoverage$filenames), '-', fixed = T)))
-exoncoverage$filenames <- filenames$X1
+# filenames <- Sys.glob(paths = "~/LLGP_validation/LLGP_metrics_files_plus/*.json")
+# list.files(path = "~/LLGP_validation/LLGP_metrics_files_plus/", pattern = "*.json", full.names = F, no.)
 
-#### Create the melt datasets ####
-rm(exoncoveragepassedmelt)
-exoncoveragepassedmelt <- exoncoverage[,F]
-exoncoveragepassedmelt$READ_DEPTH <- exoncoverage$READ_DEPTH_F + exoncoverage$READ_DEPTH_R
-exoncoveragepassedmelt$COVERED_20X_PCT <- exoncoverage$COVERED_20X_PCT
-exoncoveragepassedmelt$COVERED_30X_PCT <- exoncoverage$COVERED_30X_PCT
-exoncoveragepassedmelt$COVERED_40X_PCT <- exoncoverage$COVERED_40X_PCT
-exoncoveragepassedmelt <- melt(exoncoveragepassedmelt, id.vars = "READ_DEPTH")
+#### Load the subsampled data ####
+exoncoverageplus <- read.table(file = "~/LLGP_validation/exoncoverage.summaryplus", header = F)
+colnames(exoncoverageplus) <- read.table(file = "~/LLGP_validation/exoncoverage.header", header = F)
+readdepthplus <- read.table(file = "~/LLGP_validation/READS.summaryplus", header = F)
+colnames(readdepthplus) <- read.table(file = "~/LLGP_validation/READS.header", header = F)
+passedreadsplus <- data.frame(do.call('rbind', strsplit(as.character(readdepthplus$PASSED_READS), ',', fixed = T)))
 
-rm(exoncoveragerawmelt)
-exoncoveragerawmelt <- exoncoverage[,F]
-exoncoveragerawmelt$READ_DEPTH <- as.numeric(exoncoverage$RAW_DEPTH_F) + as.numeric(exoncoverage$RAW_DEPTH_R)
-exoncoveragerawmelt$COVERED_20X_PCT <- as.numeric(exoncoverage$COVERED_20X_PCT)
-exoncoveragerawmelt$COVERED_30X_PCT <- as.numeric(exoncoverage$COVERED_30X_PCT)
-exoncoveragerawmelt$COVERED_40X_PCT <- as.numeric(exoncoverage$COVERED_40X_PCT)
-exoncoveragerawmelt <- melt(exoncoveragerawmelt, id.vars = "READ_DEPTH")
+# Make some melt dataframes for plotting
+exoncoverageplus$READ_DEPTH_F <- as.numeric(passedreadsplus$X1)
+exoncoverageplus$READ_DEPTH_R <- as.numeric(passedreadsplus$X2)
+exoncoverageplus$RAW_DEPTH_F <- as.numeric(rawreadsplus$X1)
+exoncoverageplus$RAW_DEPTH_R <- as.numeric(rawreadsplus$X2)
 
-rm(exoncoveragerawnamesmelt)
-exoncoveragerawnamesmelt <- exoncoverage[,F]
-exoncoveragerawnamesmelt$READ_DEPTH <- as.numeric(exoncoverage$RAW_DEPTH_F) + as.numeric(exoncoverage$RAW_DEPTH_R)
-exoncoveragerawnamesmelt$COVERED_30X_PCT <- as.numeric(exoncoverage$COVERED_30X_PCT)
-exoncoveragerawnamesmelt$filenames <- exoncoverage$filenames
-# exoncoveragerawnamesmelt <- melt(exoncoveragerawnamesmelt, id.vars = "filenames")
+rm(exoncoverageplusmelt)
+exoncoverageplusmelt <- exoncoverageplus[,F]
+exoncoverageplusmelt$READ_DEPTH <- exoncoverageplus$READ_DEPTH_F + exoncoverageplus$READ_DEPTH_R
+exoncoverageplusmelt$COVERED_20X_PCT <- exoncoverageplus$COVERED_20X_PCT
+exoncoverageplusmelt$COVERED_30X_PCT <- exoncoverageplus$COVERED_30X_PCT
+exoncoverageplusmelt$COVERED_40X_PCT <- exoncoverageplus$COVERED_40X_PCT
+exoncoverageplusmelt <- melt(exoncoverageplusmelt, id.vars = "READ_DEPTH")
+
+rm(exoncoverageplusrawmelt)
+exoncoverageplusrawmelt <- exoncoverageplus[,F]
+exoncoverageplusrawmelt$READ_DEPTH <- as.numeric(exoncoverageplus$RAW_DEPTH_F) + as.numeric(exoncoverageplus$RAW_DEPTH_R)
+exoncoverageplusrawmelt$COVERED_20X_PCT <- as.numeric(exoncoverageplus$COVERED_20X_PCT)
+exoncoverageplusrawmelt$COVERED_30X_PCT <- as.numeric(exoncoverageplus$COVERED_30X_PCT)
+exoncoverageplusrawmelt$COVERED_40X_PCT <- as.numeric(exoncoverageplus$COVERED_40X_PCT)
+exoncoverageplusrawmelt <- melt(exoncoverageplusrawmelt, id.vars = "READ_DEPTH")
 
 # Input amounts if alpha-numeric (had to get these manually from the filenames)
-exoncoverage$Input <- c(
+exoncoverageNoSubsamples200ng <- exoncoverage[exoncoverage$RAW_DEPTH > 1500000,]
+exoncoverageNoSubsamples200ng$Input <- c(
   200, 200, 200, 200, 125, 225, 150, 200, 200, 200, 200, 200, 150, 200, 200, 200, 
   200, 200, 200, 200, 200, 125, 200, 225, 200, 200, 200, 200, 200, 200, 200, 75,
   200, 200, 200, 200, 10, 200, 200, 200, 200, 10, 75, 200, 200, 200, 200, 200
 )
-
-readdepth$Input <- c(
-  200, 200, 200, 200, 125, 225, 150, 200, 200, 200, 200, 200, 150, 200, 200, 200, 
-  200, 200, 200, 200, 200, 125, 200, 225, 200, 200, 200, 200, 200, 200, 200, 75,
-  200, 200, 200, 200, 10, 200, 200, 200, 200, 10, 75, 200, 200, 200, 200, 200
-)
-
-readdepth_200 <- readdepth1 %>% filter(Input > 199)
-rawreads_200 <- data.frame(do.call('rbind', strsplit(as.character(readdepth_200$TOTAL_READS), ',', fixed = T)))
-passedreads_200 <- data.frame(do.call('rbind', strsplit(as.character(readdepth_200$PASSED_READS), ',', fixed = T)))
-rawreads_200$Forward <- as.numeric(rawreads_200$X1)
-rawreads_200$Reverse <- as.numeric(rawreads_200$X2)
-summary(rawreads_200$Forward)
-summary(rawreads_200$Reverse)
-
-passedreads_200$Forward <- as.numeric(passedreads_200$X1)
-passedreads_200$Reverse <- as.numeric(passedreads_200$X2)
-summary(passedreads_200$Forward)
-summary(passedreads_200$Reverse)
+filenames <- read.csv("~/LLGP_validation/filenames_hashes.csv", header = T, sep = "\t")
+exoncoverageNoSubsamples200ng$filenames <- filenames$Name
+exoncoverageNoSubsamples200ng <- exoncoverageNoSubsamples200ng[exoncoverageNoSubsamples200ng$Input > 199,]
 
 #### Plot the data ####
 
 # Reads vs % ROI covered to 200x
-ggplot(exoncoverage, aes(READ_DEPTH_F, COVERED_200X_PCT)) +
-  geom_point() +
-  geom_smooth(method = 'lm', color = "#666666") +
-  xlab("Number of Reads (Passed)") +
-  ylab("% of ROI at 200x depth") +
-  scale_x_continuous() +
-  scale_y_continuous() +
-  ggtitle("Total Number of Reads Versus Percentage of Amplicons Achieving 200x Coverage") +
-  theme(# Lengends to the top
-    plot.title = element_text(hjust = 0.5),
-    legend.position = "none",
-    # Remove the y-axis
-    # axis.title.y = element_blank(),
-    # Remove panel border
-    panel.border = element_blank(),
-    # Remove panel grid lines
-    panel.grid.major.x = element_blank(),
-    # explicitly set the horizontal lines (or they will disappear too)
-    panel.grid.major.y = element_line(size = .25, color = "black"),
-    panel.grid.minor = element_blank(),
-    # Remove panel background
-    panel.background = element_blank(),
-    # Rotate the x-axis labels 0 degrees
-    axis.text.x = element_text(angle = 45, hjust = 1))
+pdf("~/LLGP_validation/ROI_vs_Total_Reads_200.pdf", width = 13.33, height = 7.5)
+print(
+  ggplot(exoncoverageNoSubsamples200ng, aes(READ_DEPTH, COVERED_200X_PCT)) +
+    geom_point() +
+    xlab("Number of Reads (Passed)") +
+    ylab("% of ROI at 200x depth") +
+    scale_x_continuous() +
+    scale_y_continuous() +
+    ggtitle("Total Number of Reads Versus % ROI Achieving 200x Coverage") +
+    theme(# Lengends to the top
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "none",
+      # Remove the y-axis
+      # axis.title.y = element_blank(),
+      # Remove panel border
+      panel.border = element_blank(),
+      # Remove panel grid lines
+      panel.grid.major.x = element_blank(),
+      # explicitly set the horizontal lines (or they will disappear too)
+      panel.grid.major.y = element_line(size = .25, color = "black"),
+      panel.grid.minor = element_blank(),
+      # Remove panel background
+      panel.background = element_blank(),
+      # Rotate the x-axis labels 0 degrees
+      axis.text.x = element_text(angle = 45, hjust = 1))
+)
+graphics.off()
 
 # Reads vs % ROI covered to 200x including sub-samples
-ggplot(exoncoverageplus, aes(READ_DEPTH_F, COVERED_200X_PCT)) +
+ggplot(exoncoverageNoSubsamples200ng, aes(READ_DEPTH, COVERED_200X_PCT)) +
   geom_point() +
   xlab("Number of Reads (Passed)") +
   ylab("% of ROI at 200x Depth") +
   scale_x_continuous() +
-  ggtitle("Total Number of Reads (inc. subsamples) Versus Percentage of Amplicons Achieving 200x Coverage") +
+  ggtitle("Total Number of Reads Versus Percentage of Amplicons Achieving 200x Coverage") +
   geom_hline(yintercept = 0.95, linetype="dashed", color = "red", size = 0.5) +
   theme(# Lengends to the top
     plot.title = element_text(hjust = 0.5),
@@ -268,72 +258,6 @@ print(
 
 graphics.off()
 
-# Raw reads, 30x ROI % coverage and including filenames
-pdf("~/LLGP_validation/98_ROI_vs_Total_Reads_30_with_filenames.pdf", width = 13.33, height = 7.5)
-
-print(
-  ggplot(exoncoveragerawnamesmelt, aes(READ_DEPTH/1000000, COVERED_30X_PCT, col = filenames)) + 
-    geom_point() +
-    geom_label_repel(aes(label = ifelse(COVERED_30X_PCT > 0.975 & COVERED_30X_PCT < 0.9856, 
-                                        as.character(READ_DEPTH), '')),
-                     box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
-    xlab("Number of Passed Reads (Millions)") +
-    ylab("ROI Coverage (%)") +
-    scale_x_log10() +
-    scale_y_continuous() +
-    ggtitle("Number of Reads Versus ROI Coverage (%)") +
-    geom_hline(yintercept = 0.98, linetype="dashed", color = "red", size = 0.5) +
-    theme(
-      # Lengends to the top
-      plot.title = element_text(hjust = 0.5),
-      # Remove panel border
-      panel.border = element_blank(),
-      # Remove panel grid lines
-      panel.grid.major.x = element_blank(),
-      # explicitly set the horizontal lines (or they will disappear too)
-      panel.grid.major.y = element_line(size = .25, color = "black"),
-      #panel.grid.minor = element_line(size = .25, color = "black"),
-      # Remove panel background
-      panel.background = element_blank(),
-      # Rotate the x-axis labels 0 degrees
-      axis.text.x = element_text(angle = 45, hjust = 1))
-)
-
-graphics.off()
-
-options(scipen = 999)
-exoncoveragerawnamesmelt$giab_status <- with(exoncoveragerawnamesmelt, ifelse(filenames == "gb1", 1, 0))
-
-ggplot(exoncoveragerawnamesmelt, aes(READ_DEPTH/1000000, COVERED_30X_PCT, fill = as.factor(giab_status))) +
-  geom_point(data = subset(exoncoveragerawnamesmelt, giab_status == 0), color = "grey") +
-  geom_point(data = subset(exoncoveragerawnamesmelt, giab_status == 1), color = "red") +
-  geom_label_repel(aes(label = ifelse(
-    COVERED_30X_PCT > 0.975 & COVERED_30X_PCT < 0.9856, as.character(READ_DEPTH), '')),
-    box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
-  scale_fill_manual(values = c("grey", "red"),
-                    name = "GIAB Status",
-                    breaks = c("0", "1"),
-                    labels = c("Clinical", "GIAB")) +
-  ggtitle("Number of Reads Versus ROI Coverage at 30x (%)") +
-  xlab("Number of Passed Reads (Millions)") +
-  ylab("ROI Coverage at 30x (%)") +
-  scale_x_log10() +
-  scale_y_continuous() +
-  geom_hline(yintercept = 0.98, linetype = "dashed", color = "red", size = 0.5) +
-  theme(
-    # Lengends to the top
-    plot.title = element_text(hjust = 0.5),
-    # Remove panel border
-    panel.border = element_blank(),
-    # Remove panel grid lines
-    panel.grid.major.x = element_blank(),
-    # Explicitly set the horizontal lines (or they will disappear too)
-    panel.grid.major.y = element_line(size = .25, color = "black"),
-    # Remove panel background
-    panel.background = element_blank(),
-    # Rotate the x-axis labels 0 degrees
-    axis.text.x = element_text(angle = 45, hjust = 1))
-
 # Plot reads vs % ROI covered for 20, 30, and 40x - line at 99 %
 ggplot(exoncoverageplusmelt, aes(READ_DEPTH/1000000, value, col = variable)) + 
   geom_point() +
@@ -414,16 +338,97 @@ ggplot(exoncoverage, aes(Input, duplication*100)) +
     # Rotate the x-axis labels 0 degrees
     axis.text.x = element_text(angle = 45, hjust = 1))
 
-# DNA Input vs % ROI at 200x
-ggplot(exoncoverage, aes(Input, COVERED_200X_PCT)) +
+
+
+
+# Raw Reads vs % duplication rate
+pdf("~/LLGP_validation/Duplication_vs_Raw_Reads.pdf", width = 13.33, height = 7.5)
+print(
+ggplot(exoncoverageNoSubsamples, aes(RAW_DEPTH, duplication*100)) +
+geom_point() +
+geom_label_repel(aes(label = ifelse(
+duplication > 0.5, filenames, '')),
+box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
+xlab("Number of Reads (Raw)") +
+ylab("Duplication (%)") +
+labs(caption = "Figure 5. Total raw reads need versus duplication rate") +
+scale_x_continuous() +
+scale_y_continuous() +
+ggtitle("Total Number of Reads and Duplication Percentage") +
+theme(
+# Lengends to the top
+plot.title = element_text(hjust = 0.5),
+legend.position = "none",
+# Remove the y-axis
+# axis.title.y = element_blank(),
+# Remove panel border
+panel.border = element_blank(),
+# Remove panel grid lines
+panel.grid.major.x = element_blank(),
+# explicitly set the horizontal lines (or they will disappear too)
+panel.grid.major.y = element_line(size = .25, color = "black"),
+panel.grid.minor = element_blank(),
+# Remove panel background
+panel.background = element_blank(),
+# Centre the labels
+plot.caption = element_text(hjust = 0.5),
+# Rotate the x-axis labels 0 degrees
+axis.text.x = element_text(angle = 45, hjust = 1))
+)
+graphics.off()
+
+
+# Processed Reads vs % duplication rate
+pdf("~/LLGP_validation/Duplication_vs_Processed_Reads.pdf", width = 13.33, height = 7.5)
+print(
+ggplot(exoncoverageNoSubsamples, aes(READ_DEPTH, duplication*100)) +
+geom_point() +
+geom_label_repel(aes(label = ifelse(
+duplication > 0.5, filenames, '')),
+box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
+ggtitle("Total Processed Reads and Duplication Percentage") +
+xlab("Number of Reads (Passed)") +
+ylab("Duplication (%)") +
+labs(caption = "Figure 6. Total processed reads need versus duplication rate") +
+scale_x_continuous() +
+scale_y_continuous() +
+theme(
+# Lengends to the top
+plot.title = element_text(hjust = 0.5),
+legend.position = "none",
+# Remove the y-axis
+# axis.title.y = element_blank(),
+# Remove panel border
+panel.border = element_blank(),
+# Remove panel grid lines
+panel.grid.major.x = element_blank(),
+# explicitly set the horizontal lines (or they will disappear too)
+panel.grid.major.y = element_line(size = .25, color = "black"),
+panel.grid.minor = element_blank(),
+# Remove panel background
+panel.background = element_blank(),
+# Centre the labels
+plot.caption = element_text(hjust = 0.5),
+# Rotate the x-axis labels 0 degrees
+axis.text.x = element_text(angle = 45, hjust = 1))
+)
+graphics.off()
+
+
+# DNA Input vs % duplication rate
+pdf("~/LLGP_validation/Input_vs_Duplication.pdf", width = 13.33, height = 7.5)
+print(ggplot(exoncoverageNoSubsamples, aes(Input, duplication*100)) +
   geom_point() +
-  geom_smooth(method = 'lm', color = "#666666") +
+  ggtitle("DNA Input (ng) and Duplication Percentage") +
   xlab("DNA Input (ng)") +
-  ylab("% of ROI at 200x depth") +
+  ylab("Duplication (%)") +
+  labs(caption = "Figure 7. Input DNA versus duplication rate") +
+  geom_label_repel(aes(label = ifelse(
+  duplication > 0.5, filenames, '')),
+  box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
   scale_x_continuous() +
   scale_y_continuous() +
-  ggtitle("DNA Input (ng) and % ROI Covered to 200x Depth") +
-  theme(
+    theme(
     # Lengends to the top
     plot.title = element_text(hjust = 0.5),
     legend.position = "none",
@@ -438,5 +443,37 @@ ggplot(exoncoverage, aes(Input, COVERED_200X_PCT)) +
     panel.grid.minor = element_blank(),
     # Remove panel background
     panel.background = element_blank(),
+    # Centre the labels
+    plot.caption = element_text(hjust = 0.5),
     # Rotate the x-axis labels 0 degrees
     axis.text.x = element_text(angle = 45, hjust = 1))
+)
+graphics.off()
+
+# Dataframe with no subsamples
+exoncoverageNoSubsamples <- exoncoverage[exoncoverage$RAW_DEPTH > 1500000,]
+exoncoverageNoSubsamples$Input <- c(
+200, 200, 200, 200, 125, 225, 150, 200, 200, 200, 200, 200, 150, 200, 200, 200,
+200, 200, 200, 200, 200, 125, 200, 225, 200, 200, 200, 200, 200, 200, 200, 75,
+200, 200, 200, 200, 10, 200, 200, 200, 200, 10, 75, 200, 200, 200, 200, 200
+)
+filenames.hashes <- read.csv("~/LLGP_validation/filenames_hashes.csv", header = T, sep = "\t")
+exoncoverageNoSubsamples$filenames <- filenames.hashes$Name
+exoncoverageNoSubsamples200ng <- exoncoverageNoSubsamples[exoncoverageNoSubsamples$Input > 199,]
+
+sampleQCtable <- exoncoverageNoSubsamples200ng[,F]
+sampleQCtable$Filenames <- exoncoverageNoSubsamples200ng$filenames
+sampleQCtable$Input <- exoncoverageNoSubsamples200ng$Input
+sampleQCtable$Raw_Reads <- exoncoverageNoSubsamples200ng$RAW_DEPTH
+sampleQCtable$Processed_Reads <- exoncoverageNoSubsamples200ng$READ_DEPTH
+sampleQCtable$Duplication_Percentage <- exoncoverageNoSubsamples200ng$duplication
+sampleQCtable$Median_Fragment_Size <- exoncoverageNoSubsamples200ng$fragmentsize
+sampleQCtable$ROI_to_30x <- exoncoverageNoSubsamples200ng$COVERED_30X_PCT
+sampleQCtable$ROI_to_40x <- exoncoverageNoSubsamples200ng$COVERED_40X_PCT
+sampleQCtable$ROI_to_200x <- exoncoverageNoSubsamples200ng$COVERED_200X_PCT
+
+write.csv(sampleQCtable, file = "~/LLGP_validation/summary_table.csv")
+pdf("~/LLGP_validation/sampleQCtable.pdf", height = 12, width = 14)
+grid.table(sampleQCtable, rows = NULL)
+dev.off()
+

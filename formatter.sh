@@ -1,5 +1,4 @@
 # Get information about total reads and % ROI covered, plus headers
-
 for i in $(ls /home/callum/LLGP_validation/LLGP_metrics_files/*.metrics.exoncoverage); 
 do grep -A 2 "# COVERAGE BINS" $i | tail -1 >> exoncoverage.summary;
 done
@@ -8,6 +7,7 @@ for i in $(ls /home/callum/LLGP_validation/LLGP_metrics_files_plus/*.exoncoverag
 do grep -A 2 "# COVERAGE BINS" $i | tail -1 >> exoncoverage.summaryplus;
 done
 
+# Remove the last column (extra addition for the subsamples)
 sed -i -r 's/\S+//19' exoncoverage.summaryplus 
 
 for i in $(ls /home/callum/LLGP_validation/LLGP_metrics_files/*.metrics.READS); 
