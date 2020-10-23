@@ -80,9 +80,9 @@ pdf("~/LLGP_validation/PDF_Plots/98_ROI_vs_Raw_Reads_20_30_40.pdf", width = 13.3
 print(
   ggplot(exoncoverageplusrawmelt, aes(READ_DEPTH/1000000, value, col = variable)) + 
     geom_point() +
-    geom_smooth(method = "loess", size = 0.5) +
-    geom_label_repel(aes(label = ifelse(value > 0.975 & value < 0.985, as.character(READ_DEPTH), '')),
-                     box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
+    geom_label_repel(aes(label = ifelse(
+      value >= 0.972 & value <= 0.98 & variable == "COVERED_30X_PCT", as.character(READ_DEPTH), '')),
+      box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
     xlab("Number of Raw Paired Reads (Millions)") +
     ylab("ROI Coverage (%)") +
     scale_x_log10() +
@@ -111,9 +111,9 @@ pdf("~/LLGP_validation/PDF_Plots/98_ROI_vs_Processed_Reads_20_30_40.pdf", width 
 print(
   ggplot(exoncoverageplusmelt, aes(READ_DEPTH/1000000, value, col = variable)) + 
     geom_point() +
-    geom_smooth(method = "loess", size = 0.5) +
-    geom_label_repel(aes(label = ifelse(value > 0.975 & value < 0.985, as.character(READ_DEPTH), '')),
-                     box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
+    geom_label_repel(aes(label = ifelse(
+      value >= 0.972 & value <= 0.98 & variable == "COVERED_30X_PCT", as.character(READ_DEPTH), '')),
+      box.padding = 0.35, point.padding = 0.5, segment.color = 'grey50') +
     xlab("Number of Processed Paired Reads (Millions)") +
     ylab("ROI Coverage (%)") +
     scale_x_log10() +
