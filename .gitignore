@@ -4,4 +4,5 @@ subsampling_files/
 *.odp
 *.pptx
 *.pdf
-
+*.vcf*
+*.fastq*
