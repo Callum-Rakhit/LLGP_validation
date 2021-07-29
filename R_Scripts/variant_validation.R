@@ -11,11 +11,10 @@ GetPackages <- function(required.packages) {
 GetPackages(c("tidyverse", "dplyr", "reshape", "reshape2", "ggrepel", "ggpubr",
               "devtools", "ggplot2", "ggraph", "data.table", "stringr"))
 
+# Get a list of all VCFs
 args <- commandArgs(trailingOnly = T)
 directory <- "/home/callum//LLGP_Validation/llgp_validation_reference/output/"
 args <- list.files(path = directory, pattern = "*.vcf")
-
-vcf_data_merged_allsamples <- vcf_data_merged[NULL]
 
 for(i in 1:length(args)){
   
@@ -32,14 +31,15 @@ for(i in 1:length(args)){
   vcf_names <- unlist(strsplit(tmp_vcf[length(tmp_vcf)], "\t"))
   names(tmp_vcf_data) <- vcf_names
   vcf_data <- na_if(tmp_vcf_data, "./.:.:.:.:.")
-  vcf_data$variant_info <- apply(vcf_data[c(10:127)], 1, function(x) paste(x[!is.na(x) & x != "No"], collapse = ", "))
-  vcf_data <- vcf_data[-c(10:127)]
+  limit <- length(vcf_data)
+  vcf_data$variant_info <- apply(vcf_data[c(10:limit)], 1, function(x) paste(x[!is.na(x) & x != "No"], collapse = ", "))
+  vcf_data <- vcf_data[-c(10:limit)]
   rm(tmp_vcf, tmp_vcf_data)
   
   # Extract information on variant
   vcf_data$actual_AF <- str_split_fixed(vcf_data$variant_info, ":", 5)[,2]
-  alt <- as.numeric(str_split_fixed(vcf_data$actual_AF, ",", 2)[,2])
-  ref <- as.numeric(str_split_fixed(vcf_data$actual_AF, ",", 2)[,1])
+  alt <- as.numeric(str_split_fixed(vcf_data$actual_AF, ",", n = Inf)[,2])
+  ref <- as.numeric(str_split_fixed(vcf_data$actual_AF, ",", n = Inf)[,1])
   vcf_data$actual_AF <- alt/(ref+alt)
   
   # Get the truth set
@@ -49,6 +49,10 @@ for(i in 1:length(args)){
   # Add the truth set
   vcf_data_merged <- left_join(vcf_data, truth_set, by = c("POS" = "START"))
   vcf_data_merged$samplename <- basename
+  vcf_data_merged <- na.omit(vcf_data_merged)
+  if(!exists("vcf_data_merged_allsamples")) {
+    vcf_data_merged_allsamples <- vcf_data_merged[NULL]
+  } 
   vcf_data_merged_allsamples <- rbind(vcf_data_merged_allsamples, vcf_data_merged)
 }
 
